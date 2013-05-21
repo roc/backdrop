@@ -3,6 +3,7 @@ Add _week_start_at field to all documents in all collections
 """
 from backdrop.core.bucket import utc
 from backdrop.core.records import Record
+from backdrop.core.validation import key_is_internal, key_is_reserved
 import logging
 
 log = logging.getLogger(__name__)
@@ -18,10 +19,11 @@ def up(db):
         }
         for document in collection.find(query):
             document['_timestamp'] = utc(document['_timestamp'])
-            if '_week_start_at' in document:
-                document.pop('_week_start_at')
-            if '_updated_at' in document:
-                document.pop('_updated_at')
+
+            for key in document.keys():
+                if key_is_internal(key) and not key_is_reserved(key):
+                    document.pop(key)
+
             record = Record(document)
 
             collection.save(record.to_mongo())
